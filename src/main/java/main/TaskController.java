@@ -1,6 +1,12 @@
 package main;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
+import main.model.Task;
+import main.model.TaskRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -11,28 +17,34 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class TaskController {
+
+  @Autowired
+  TaskRepository taskRepository;
+
   @GetMapping("/tasks/")
-  public List<Task> list(){
-      return Storage.getAllTask();
+  public List<Task> list() {
+    Iterable<Task> allBooks = taskRepository.findAll();
+    return new ArrayList<>((Collection<? extends Task>) allBooks);
+
   }
 
   @PutMapping("/tasks/")
-  public int addTask(Task task){
-    return Storage.addTask(task);
+  public int add(Task task) {
+    Task newTask = taskRepository.save(task);
+    return newTask.getId();
   }
 
   @DeleteMapping("/tasks/{id}")
-  public ResponseEntity delete (@PathVariable int id){
-    if (Storage.deleteTask(id)) return ResponseEntity.status(HttpStatus.OK).body(null);
-    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+  public void delete(@PathVariable int id) {
+    taskRepository.deleteById(id);
   }
 
   @GetMapping("/tasks/{id}")
-  public ResponseEntity get (@PathVariable int id) {
-    Task task = Storage.get(id);
-    if (task == null)
+  public ResponseEntity get(@PathVariable int id) {
+    Optional<Task> book = taskRepository.findById(id);
+    if (!book.isPresent()) {
       return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
-    return new ResponseEntity(task, HttpStatus.OK);
-
+    }
+    return new ResponseEntity(book.get(), HttpStatus.OK);
   }
 }
